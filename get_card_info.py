@@ -1,13 +1,15 @@
-#import requests
+import requests
 from config import WEBSCARD_TOKEN
-#WEBSCARD_HEADERS = {'Authorization': f'Bearer {WEBSCARD_TOKEN}'}#
+WEBSCARD_HEADERS = {'Authorization': f'Bearer {WEBSCARD_TOKEN}'}
 
-#ENDPOINT = f'https://api.webscard.net/api/v1/wallet/balancescar {card_id}'#
+ENDPOINT_CARD_DETAIL = f'https://api.webscard.net/api/v1/cards/card/detail/sensitive?card_id='
+def get_card_info(endpoint):
+    response = requests.get(
+        endpoint,
+        headers=WEBSCARD_HEADERS,
+        )
+    return(response.json())
 
-#def get_card_info():
-#    response = requests.get(
-#        ENDPOINT,
-#        headers=WEBSCARD_HEADERS,
-#        )
-#    print(response.json())
+
+
 
