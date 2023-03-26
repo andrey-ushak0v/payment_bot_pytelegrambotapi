@@ -58,8 +58,8 @@ def update_status(tg_id):
         conn = sqlite3.connect("db.sqlite3")
         cursor = conn.cursor()
         cursor.execute(
-            f"UPDATE bot_user SET user_status='has_card' WHERE telegram_id={tg_id};"
-            )
+            f"UPDATE bot_user SET\
+                  user_status='has_card' WHERE telegram_id='{tg_id}'")
         conn.commit()
         cursor.close()
     except sqlite3.Error as error:
@@ -69,4 +69,4 @@ def update_status(tg_id):
             conn.close()
 
 
-update_status(761928168)
+# update_status(761928168)
