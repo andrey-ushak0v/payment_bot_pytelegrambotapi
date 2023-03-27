@@ -1,14 +1,13 @@
 import telebot
 from telebot import types
+import re
 
-from conf import BOT_TOKEN, ENDPOINT_CARD_DETAIL, ENDPOINT_CARD_BALANCE
-from card_actions import get_my_cards, get_card_info
-from user_actions import user_to_db, check_user, check_status
-from text import (instruction_balance,
-                  instruction_support,
-                  hello_new_user,
-                  instruction_rate,
-                  instructions_put_on)
+from card_actions import get_card_info, get_my_cards
+from conf import BOT_TOKEN, ENDPOINT_CARD_BALANCE, ENDPOINT_CARD_DETAIL
+from repl_actions import repl_to_db
+from text import (hello_new_user, instruction_balance, instruction_rate,
+                  instruction_support, instructions_put_on)
+from user_actions import check_status, check_user, user_to_db
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
@@ -82,9 +81,8 @@ def bot_message(message):
             bot.send_message(message.chat.id, 'Назад', reply_markup=markup)
 
         elif message.text == 'Пополнить карту':
-            bot.send_message(message.chat.id, instruction_balance)
-            if message.text == 'MYHASH' + r'[a-zA-Z0-9]{10}':
-                bot.send_message(message.chat.id, instructions_put_on)
+            sent = bot.reply_to(message, instruction_balance)
+            bot.register_next_step_handler(sent, review)
 
         elif message.text == 'Тариф':
             bot.send_message(message.chat.id, instruction_rate)
@@ -109,6 +107,19 @@ def bot_message(message):
                     message.chat.id,
                     f'ваш баланс {balance} доллара'
             )
+
+
+def review(message):
+    msg = message.text
+    # if msg == 'MYHASH' + r'[a-zA-Z0-9]{10}':
+    if re.match(r'[A-Za-z0-9]{10}', msg) and len(msg) == 10:
+        tg_id = message.from_user.id
+        repl_to_db(msg, tg_id)
+        bot.send_message(message.chat.id, instructions_put_on)
+    else:
+        bot.send_message(
+            message.chat.id,
+            'невалидное значение, попробуйте еще раз')
 
 
 bot.polling(non_stop=True)
