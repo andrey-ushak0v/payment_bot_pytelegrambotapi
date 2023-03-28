@@ -1,8 +1,11 @@
-import telebot
-from telebot import types
 import re
 
+import telebot
+from telebot import types
+from loger_conf import logger
+
 from card_actions import get_card_info, get_my_cards
+from change_keys import change_keys
 from conf import BOT_TOKEN, ENDPOINT_CARD_BALANCE, ENDPOINT_CARD_DETAIL
 from repl_actions import repl_to_db
 from text import (hello_new_user, instruction_balance, instruction_rate,
@@ -18,10 +21,12 @@ def start(message):
     tg_id = message.from_user.id
     if not check_user(tg_id):
         user_to_db(tg_id)
+        # здесь подтягиваем кнопки
         bot.send_message(message.chat.id,
                          f'привет {username}. {hello_new_user}')
     elif check_user(tg_id) == tg_id:
         if check_status(tg_id) == 'new_user':
+            # и здесь подтягиваем кнопки
             bot.send_message(message.chat.id,
                              f'привет {username}. {hello_new_user}')
         elif check_status(tg_id) == 'has_card':
@@ -94,10 +99,10 @@ def bot_message(message):
                 message.chat.id,
                 f'реквизиты {get_my_cards(tg_id)[3]}-{get_my_cards(tg_id)[2]}:'
                 )
-            for key in info:
+            for key in change_keys(info):
                 bot.send_message(
                     message.chat.id,
-                    f'{key} - {info[key]}')
+                    f'{key} - {change_keys(info)[key]}')
 
         elif message.text == 'Узнать баланс':
             endpoint = (ENDPOINT_CARD_BALANCE + get_my_cards(tg_id)[0])
@@ -111,12 +116,12 @@ def bot_message(message):
 
 def review(message):
     msg = message.text
-    # if msg == 'MYHASH' + r'[a-zA-Z0-9]{10}':
     if re.match(r'[A-Za-z0-9]{10}', msg) and len(msg) == 10:
         tg_id = message.from_user.id
         repl_to_db(msg, tg_id)
         bot.send_message(message.chat.id, instructions_put_on)
     else:
+        logger.warning('ввод невалидного значения')
         bot.send_message(
             message.chat.id,
             'невалидное значение, попробуйте еще раз')
