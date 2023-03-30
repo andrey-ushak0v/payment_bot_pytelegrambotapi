@@ -3,14 +3,15 @@ import sqlite3
 from loger_conf import logger
 
 
-def repl_to_db(message, tg_id):
+def repl_to_db(message, pay_type, tg_id):
     try:
         logger.info(f'сохранение хэша пополнения у юзера {tg_id}')
         conn = sqlite3.connect("db.sqlite3")
         cursor = conn.cursor()
         cursor.execute(
             f"INSERT INTO replenishment\
-            (transaction_hash, user_id) VALUES ('{message}', '{tg_id}');")
+            (transaction_hash, payment_type, user_id)\
+                  VALUES ('{message}', '{pay_type}', '{tg_id}');")
         conn.commit()
         cursor.close()
     except sqlite3.Error as error:

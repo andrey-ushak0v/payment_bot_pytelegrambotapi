@@ -16,6 +16,7 @@ create table card (
 create table replenishment (
     transaction_hash varchar primary key,
     created_at timestamp default current_timestamp not null,
+    payment_type varchar not null,
     user_id integer not null,
     foreign key(user_id) references bot_user(telegram_id)
  );
