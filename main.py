@@ -7,11 +7,12 @@ from loger_conf import logger
 from card_actions import get_card_info, get_my_cards
 from change_keys import change_keys
 from conf import BOT_TOKEN, ENDPOINT_CARD_BALANCE, ENDPOINT_CARD_DETAIL
-from repl_actions import repl_to_db
+from repl_actions import repl_to_db, check_repl
 from text import (hello_new_user, instruction_balance, instruction_rate,
                   instruction_support, instructions_put_on, instruction_status,
-                  instruction_conditions)
-from user_actions import check_status, check_user, user_to_db
+                  instruction_conditions, instruction_application,
+                  instruction_auth)
+from user_actions import check_status, check_user, user_to_db, update_status
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
@@ -36,7 +37,7 @@ def start(message):
                          reply_markup=markup)
 
     elif check_user(tg_id) == tg_id:
-        if check_status(tg_id) == 'new_user':
+        if check_status(tg_id) != 'has_card':
             markup = types.ReplyKeyboardMarkup(
                 resize_keyboard=True,
                 row_width=2
@@ -167,18 +168,53 @@ def bot_message(message):
                 message.chat.id,
                 instruction_conditions,
                 reply_markup=markup)
-        
+
+        elif message.text == 'Открыть карту':
+            update_status(tg_id, 'pressed_card')
+            markup = types.ReplyKeyboardMarkup(
+                resize_keyboard=True,
+                row_width=2
+                )
+            button_1 = types.KeyboardButton('Продолжить')
+            button_2 = types.KeyboardButton('Назад')
+            markup.add(button_1, button_2)
+            bot.send_message(message.chat.id,
+                             instruction_application,
+                             reply_markup=markup)
+
+        elif message.text == 'Продолжить':
+            update_status(tg_id, 'start_payment')
+            sent = bot.reply_to(message, instruction_balance)
+            bot.register_next_step_handler(sent, review)
+
+        elif message.text == 'Начать аутентификацию':
+            bot.send_message(message.chat.id, 'начинаем аутентификацию')
+
 
 def review(message):
-    msg = message.text
+    tg_id = message.from_user.id
+    msg = message.text   # сделать чтоб  'назад' нажималось корректно
     if re.match(r'[A-Za-z0-9]{10}', msg) and len(msg) == 10:
         tg_id = message.from_user.id
         if check_status(tg_id) == 'has_card':
             pay_type = 'top_up'
+            repl_to_db(msg, pay_type, tg_id)
+            bot.send_message(message.chat.id, instructions_put_on)
         else:
             pay_type = 'new_card'
-        repl_to_db(msg, pay_type, tg_id)
-        bot.send_message(message.chat.id, instructions_put_on)
+            repl_to_db(msg, pay_type, tg_id)
+            if check_repl(tg_id, message):
+                update_status(tg_id, 'finished_payment')
+                markup = types.ReplyKeyboardMarkup(
+                                resize_keyboard=True,
+                                row_width=2
+                            )
+                button_1 = types.KeyboardButton('Начать аутентификацию')
+                button_2 = types.KeyboardButton('Назад')
+                markup.add(button_1, button_2)
+                bot.send_message(message.chat.id,
+                                 instruction_auth,
+                                 reply_markup=markup)
     else:
         logger.warning('ввод невалидного значения')
         bot.send_message(
