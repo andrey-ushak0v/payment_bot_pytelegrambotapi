@@ -33,7 +33,7 @@ def start(message):
         button_4 = types.KeyboardButton('Мой статус')
         markup.add(button_1, button_2, button_3, button_4)
         bot.send_message(message.chat.id,
-                         f'привет {username}. {hello_new_user}',
+                         f'Здравствуйте {username}. {hello_new_user}',
                          reply_markup=markup)
 
     elif check_user(tg_id) == tg_id:
@@ -65,7 +65,7 @@ def start(message):
             markup.add(button_1, button_2, button_3, button_4, button_5)
             bot.send_message(
                 message.chat.id,
-                'привет {0.first_name}'.format(message.from_user),
+                'Здравствуйте {0.first_name}'.format(message.from_user),
                 reply_markup=markup)
 
 
@@ -81,7 +81,7 @@ def bot_message(message):
                     row_width=2
                     )
                 button_1 = types.KeyboardButton('Тариф')
-                button_2 = types.KeyboardButton('Назад')
+                button_2 = types.KeyboardButton('В главное меню')
                 markup.add(button_1, button_2)
                 bot.send_message(
                     message.chat.id,
@@ -99,7 +99,7 @@ def bot_message(message):
                 f'у вас оформлена карта - {card[3]} {card[2]}'
                 )
 
-        elif message.text == 'Назад':
+        elif message.text == 'В главное меню':
             if check_status(tg_id) == 'has_card':
                 markup = types.ReplyKeyboardMarkup(
                     resize_keyboard=True,
@@ -111,7 +111,9 @@ def bot_message(message):
                 button_4 = types.KeyboardButton('Реквизиты карты')
                 button_5 = types.KeyboardButton('Пополнить карту')
                 markup.add(button_1, button_2, button_3, button_4, button_5)
-                bot.send_message(message.chat.id, 'Назад', reply_markup=markup)
+                bot.send_message(message.chat.id,
+                                 'В главное меню',
+                                 reply_markup=markup)
 
             else:
                 markup = types.ReplyKeyboardMarkup(
@@ -123,7 +125,9 @@ def bot_message(message):
                 button_3 = types.KeyboardButton('Помощь')
                 button_4 = types.KeyboardButton('Мой статус')
                 markup.add(button_1, button_2, button_3, button_4)
-                bot.send_message(message.chat.id, 'Назад', reply_markup=markup)
+                bot.send_message(message.chat.id,
+                                 'В главное меню',
+                                 reply_markup=markup)
 
         elif message.text == 'Пополнить карту':
             sent = bot.reply_to(message, instruction_balance)
@@ -162,7 +166,7 @@ def bot_message(message):
                 row_width=2
                 )
             button_1 = types.KeyboardButton('Открыть карту')
-            button_2 = types.KeyboardButton('Назад')
+            button_2 = types.KeyboardButton('В главное меню')
             markup.add(button_1, button_2)
             bot.send_message(
                 message.chat.id,
@@ -176,7 +180,7 @@ def bot_message(message):
                 row_width=2
                 )
             button_1 = types.KeyboardButton('Продолжить')
-            button_2 = types.KeyboardButton('Назад')
+            button_2 = types.KeyboardButton('В главное меню')
             markup.add(button_1, button_2)
             bot.send_message(message.chat.id,
                              instruction_application,
@@ -187,13 +191,16 @@ def bot_message(message):
             sent = bot.reply_to(message, instruction_balance)
             bot.register_next_step_handler(sent, review)
 
-        elif message.text == 'Начать аутентификацию':
-            bot.send_message(message.chat.id, 'начинаем аутентификацию')
+        elif message.text == 'Начать идентификацию':
+            update_status(tg_id, 'stared_auth')
+            sent = bot.reply_to(message, 'введите имя')
+            bot.register_next_step_handler(sent, user_answer_name)
+
 
 
 def review(message):
     tg_id = message.from_user.id
-    msg = message.text   # сделать чтоб  'назад' нажималось корректно
+    msg = message.text   
     if re.match(r'[A-Za-z0-9]{10}', msg) and len(msg) == 10:
         tg_id = message.from_user.id
         if check_status(tg_id) == 'has_card':
@@ -203,23 +210,72 @@ def review(message):
         else:
             pay_type = 'new_card'
             repl_to_db(msg, pay_type, tg_id)
-            if check_repl(tg_id, message):
+            if check_repl(tg_id, msg):
                 update_status(tg_id, 'finished_payment')
                 markup = types.ReplyKeyboardMarkup(
                                 resize_keyboard=True,
                                 row_width=2
                             )
-                button_1 = types.KeyboardButton('Начать аутентификацию')
-                button_2 = types.KeyboardButton('Назад')
+                button_1 = types.KeyboardButton('Начать идентификацию')
+                button_2 = types.KeyboardButton('В главное меню')
                 markup.add(button_1, button_2)
                 bot.send_message(message.chat.id,
                                  instruction_auth,
                                  reply_markup=markup)
     else:
-        logger.warning('ввод невалидного значения')
-        bot.send_message(
-            message.chat.id,
-            'невалидное значение, попробуйте еще раз')
+        if msg == 'В главное меню':
+            markup = types.ReplyKeyboardMarkup(
+                resize_keyboard=True,
+                row_width=2
+                )
+            button_1 = types.KeyboardButton('Открыть карту')
+            button_2 = types.KeyboardButton('Условия')
+            button_3 = types.KeyboardButton('Помощь')
+            button_4 = types.KeyboardButton('Мой статус')
+            markup.add(button_1, button_2, button_3, button_4)
+            bot.send_message(message.chat.id, 'Назад', reply_markup=markup)
+        else:
+            logger.warning('ввод невалидного значения')
+            bot.send_message(
+                message.chat.id,
+                'невалидное значение, попробуйте еще раз')
+        
+
+def user_answer_name(message):
+    msg = message.text
+    if re.match(r'[A-Za-z0-9]{3}', msg):
+        sent = bot.reply_to(message, 'введите номер паспорта')
+        bot.register_next_step_handler(sent, user_answer_psprt)
+
+
+def user_answer_psprt(message):
+    msg = message.text
+    if re.match(r'[A-Za-z0-9]{3}', msg):
+        sent = bot.reply_to(message, 'фото паспорта')
+        bot.register_next_step_handler(sent, user_answer_psprt_ph)
+
+
+def user_answer_psprt_ph(message):
+    msg = message
+    if re.match(r'[A-Za-z0-9]{3}', msg):
+        sent = bot.reply_to(message, 'селфи паспорта')
+        bot.register_next_step_handler(sent, user_answer_selphe)
+
+
+def user_answer_selphe(message):
+    tg_id = message.from_user.id
+    msg = message.text
+    if re.match(r'[A-Za-z0-9]{3}', msg):
+        update_status(tg_id, 'finished_auth')
+        markup = types.ReplyKeyboardMarkup(
+                resize_keyboard=True,
+                row_width=2
+                )
+        button_1 = types.KeyboardButton('Назад')
+        markup.add(button_1)
+        bot.send_message(message.chat.id,
+                         'ожидайте карту',
+                         reply_markup=markup)
 
 
 bot.polling(non_stop=True)
