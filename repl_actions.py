@@ -29,17 +29,17 @@ def check_repl(tg_id, hhash):
         conn = sqlite3.connect("db.sqlite3")
         cursor = conn.cursor()
         cursor.execute(
-            f"SELECT transaction_hash FROM replenishment WHERE transaction_hash='{hhash}';"
+            f"SELECT transaction_hash FROM replenishment\
+                  WHERE transaction_hash='{hhash}';"
             )
         record = cursor.fetchone()
         if record is None:
             return record
         return record[0]
     except sqlite3.Error as error:
-        logger.error(f'ошибка получения хэша юзера из бд с id - {tg_id} {error}')
+        logger.error(f'ошибка получения хэша\
+                      юзера из бд с id - {tg_id} {error}')
         return ("Ошибка при работе с SQLite")
     finally:
         if conn:
             conn.close()
-
-#print(check_repl(761928168, 'rfrf9999ii'))

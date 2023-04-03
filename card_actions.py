@@ -10,7 +10,7 @@ WEBSCARD_HEADERS = {'Authorization': f'Bearer {WEBSCARD_TOKEN}'}
 
 def get_my_cards(tg_id):
     try:
-        logger.info(f'получение карты юзером {tg_id}')
+        logger.info(f'получение карты bp бд юзером {tg_id}')
         conn = sqlite3.connect("db.sqlite3")
         cursor = conn.cursor()
         cursor.execute(f"SELECT * FROM card WHERE user_id = {tg_id};")
