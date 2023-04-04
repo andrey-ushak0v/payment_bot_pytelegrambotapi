@@ -21,15 +21,29 @@ create table replenishment (
     foreign key(user_id) references bot_user(telegram_id)
  );
 
- create table pasport_name (
+create table pasport_name (
     p_name varchar,
     created_at timestamp default current_timestamp not null,
     user_id integer not null,
     foreign key(user_id) references bot_user(telegram_id)
  );
 
- create table pasport_number (
+create table pasport_number (
     p_number int not null,
+    created_at timestamp default current_timestamp not null,
+    user_id integer not null,
+    foreign key(user_id) references bot_user(telegram_id)
+ );
+
+ create table pasport_photo (
+    p_photo_id varchar primary key not null,
+    created_at timestamp default current_timestamp not null,
+    user_id integer not null,
+    foreign key(user_id) references bot_user(telegram_id)
+ );
+
+ create table pasport_selphe (
+    p_photo_id varchar primary key not null,
     created_at timestamp default current_timestamp not null,
     user_id integer not null,
     foreign key(user_id) references bot_user(telegram_id)

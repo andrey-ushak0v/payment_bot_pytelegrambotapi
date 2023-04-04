@@ -1,7 +1,7 @@
 import re
-
 import telebot
 from telebot import types
+import os
 from loger_conf import logger
 
 from card_actions import get_card_info, get_my_cards
@@ -15,7 +15,8 @@ from text import (hello_new_user, instruction_balance, instruction_rate,
                   instruction_psprt_name, instruction_psprt_number,
                   instruction_selphe, instruction_finish_auth)
 from user_actions import check_status, check_user, user_to_db, update_status
-from users_data_actions import user_name_to_db, user_p_num_to_db
+from users_data_actions import (user_name_to_db, user_p_num_to_db,
+                                user_photo_to_db, user_selphe_to_db)
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
@@ -231,16 +232,8 @@ def review(message):
                                  reply_markup=markup)
     else:
         logger.warning('ввод невалидного значения')
-        markup = types.ReplyKeyboardMarkup(
-                            resize_keyboard=True,
-                            row_width=2,
-                            one_time_keyboard=True
-                              )
-        button_1 = types.KeyboardButton('Продолжить')
-        markup.add(button_1)
-        bot.send_message(
-            message.chat.id,
-            'невалидное значение, попробуйте еще раз', reply_markup=markup)
+        sent = bot.reply_to(message, 'невалидное значение, попробуйте еще раз')
+        bot.register_next_step_handler(sent, review)
 
 
 def user_answer_name(message):
@@ -269,16 +262,24 @@ def user_answer_psprt(message):
 
 
 def user_answer_psprt_ph(message):
-    msg = message.text
-    if re.match(r'[A-Za-z0-9]{3}', msg):
+    tg_id = message.from_user.id
+    if message.content_type == 'photo':
+        photo_id = message.photo[-1].file_id
+        save_to_photos(message, photo_id)
+        user_photo_to_db(photo_id, tg_id)
         sent = bot.reply_to(message, instruction_selphe)
         bot.register_next_step_handler(sent, user_answer_selphe)
+    else:
+        sent = bot.reply_to(message, 'вы прислали не фото попробуйте еще раз')
+        bot.register_next_step_handler(sent, user_answer_psprt_ph)
 
 
 def user_answer_selphe(message):
     tg_id = message.from_user.id
-    msg = message.text
-    if re.match(r'[A-Za-z0-9]{3}', msg):
+    if message.content_type == 'photo':
+        photo_id = message.photo[-1].file_id
+        save_to_photos(message, photo_id)
+        user_selphe_to_db(photo_id, tg_id)
         update_status(tg_id, 'finished_auth')
         markup = types.ReplyKeyboardMarkup(
                 resize_keyboard=True,
@@ -289,6 +290,15 @@ def user_answer_selphe(message):
         bot.send_message(message.chat.id,
                          instruction_finish_auth,
                          reply_markup=markup)
+
+
+def save_to_photos(message, photo_id):
+    file_ph = bot.get_file(photo_id)
+    filename, file_extention = os.path.splitext(file_ph.file_path)
+    downloaded_file_ph = bot.download_file(file_ph.file_path)
+    src = 'photos/' + photo_id + file_extention   # добавить папки по user_id
+    with open(src, 'wb') as new_file:
+        new_file.write(downloaded_file_ph)
 
 
 bot.polling(non_stop=True)
