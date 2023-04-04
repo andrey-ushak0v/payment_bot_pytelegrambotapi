@@ -139,7 +139,8 @@ def bot_message(message):
             for key in change_keys(info):
                 bot.send_message(
                     message.chat.id,
-                    f'{key} - {change_keys(info)[key]}')
+                    f'{key}\n\n{change_keys(info)[key]}'
+                    )
 
         elif message.text == 'Узнать баланс':
             endpoint = (ENDPOINT_CARD_BALANCE + get_my_cards(tg_id)[0])
