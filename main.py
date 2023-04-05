@@ -19,7 +19,22 @@ from actions.user_actions import (check_status, check_user, user_to_db,
 from actions.users_data_actions import (user_name_to_db, user_p_num_to_db,
                                         user_photo_to_db, user_selphe_to_db)
 
+from flask import Flask, request, Response
+
 bot = telebot.TeleBot(BOT_TOKEN)
+app = Flask(__name__)
+
+
+@app.route('/', methods=['POST', 'GET'])
+def index():
+    if request.headers.get('content-type') == 'application/json':
+        update = types.Update.de_json(request.stream.read().decode('utf-8'))
+        bot.process_new_updates([update])
+        return ''
+    if request.method == 'POST':
+        return Response('ok', status=200)
+    else:
+        return ''
 
 
 @bot.message_handler(commands=['start'])
@@ -148,7 +163,7 @@ def bot_message(message):
             balance = info['balance']['available']
             bot.send_message(
                     message.chat.id,
-                    f'ваш баланс {balance} доллара'
+                    f'баланс вашей карты:\n{balance} '
             )
 
         elif message.text == 'Мой статус':
@@ -301,4 +316,5 @@ def save_to_photos(message, photo_id):
         new_file.write(downloaded_file_ph)
 
 
-bot.polling(non_stop=True)
+if __name__ == '__main__':
+    app.run()
