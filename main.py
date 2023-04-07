@@ -1,25 +1,28 @@
-import re
-import telebot
-from telebot import types
 import os
-from loger_conf import logger
+import re
+
+import telebot
+from flask import Flask, Response, request
+from telebot import types
 
 from actions.card_actions import get_card_info, get_my_cards
-from change_keys import change_keys
-from conf import BOT_TOKEN, ENDPOINT_CARD_BALANCE, ENDPOINT_CARD_DETAIL
-from actions.repl_actions import repl_to_db, check_repl
-from text import (hello_new_user, instruction_balance, instruction_rate,
-                  instruction_support, instructions_put_on, instruction_status,
-                  instruction_conditions, instruction_application,
-                  instruction_auth, instructiom_ph_psprt,
-                  instruction_psprt_name, instruction_psprt_number,
-                  instruction_selphe, instruction_finish_auth)
-from actions.user_actions import (check_status, check_user, user_to_db,
-                                  update_status)
+from actions.repl_actions import check_repl, repl_to_db
+from actions.transaction_actions import (check_transaction_owner,
+                                         transaction_to_db)
+from actions.user_actions import (check_status, check_user, update_status,
+                                  user_to_db)
 from actions.users_data_actions import (user_name_to_db, user_p_num_to_db,
                                         user_photo_to_db, user_selphe_to_db)
-
-from flask import Flask, request, Response
+from change_keys import change_keys
+from conf import BOT_TOKEN, ENDPOINT_CARD_BALANCE, ENDPOINT_CARD_DETAIL
+from loger_conf import logger
+from text import (hello_new_user, instructiom_ph_psprt,
+                  instruction_application, instruction_auth,
+                  instruction_balance, instruction_conditions,
+                  instruction_finish_auth, instruction_psprt_name,
+                  instruction_psprt_number, instruction_rate,
+                  instruction_selphe, instruction_status, instruction_support,
+                  instructions_put_on)
 
 bot = telebot.TeleBot(BOT_TOKEN)
 app = Flask(__name__)
@@ -30,11 +33,24 @@ def index():
     if request.headers.get('content-type') == 'application/json':
         update = types.Update.de_json(request.stream.read().decode('utf-8'))
         bot.process_new_updates([update])
-        return ''
-    if request.method == 'POST':
         return Response('ok', status=200)
-    else:
-        return ''
+
+
+@app.route('/callback', methods=['POST'])
+def callback():
+    data = request.json
+    transaction_to_db(
+        data['transaction_id'],
+        data['transaction_amount'],
+        data['status'],
+        data['transaction_type'],
+        data['card_id']
+    )
+    user_id = check_transaction_owner(data['card_id'])
+    bot.send_message(chat_id=user_id,
+                     text=f'{data["transaction_type"]}\
+ на {data["transaction_amount"]} {data["transaction_currency"]}')
+    return Response('ok', status=200)
 
 
 @bot.message_handler(commands=['start'])
