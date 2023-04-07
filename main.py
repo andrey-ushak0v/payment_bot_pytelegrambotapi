@@ -327,7 +327,7 @@ def save_to_photos(message, photo_id):
     file_ph = bot.get_file(photo_id)
     filename, file_extention = os.path.splitext(file_ph.file_path)
     downloaded_file_ph = bot.download_file(file_ph.file_path)
-    src = 'photos/' + photo_id + file_extention   
+    src = 'photos/' + photo_id + file_extention
     with open(src, 'wb') as new_file:
         new_file.write(downloaded_file_ph)
 
