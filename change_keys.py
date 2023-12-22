@@ -1,4 +1,5 @@
 def change_keys(data: dict):
+    
     replacements = ['Номер карты:', 'срок действия:', 'CVV:']
     new_list = list(data.values())
     new_list.pop(4)
